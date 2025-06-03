@@ -1,0 +1,133 @@
+@import 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+
+html {
+    font-size: 10px;
+    background-color: #E5E7E9;
+}
+
+
+#root {
+    position: relative;
+}
+
+
+:root {
+    /* Color */
+    --color-primary: #F15A22;
+    --color-primary-hover: #009889;
+    --color-secondary: #FFE6CB;
+    --color-terciary: #00A0DC;
+    --color-quaternary: #325565;
+    --color-quinary: #414042;
+
+    --success: #3ad29f;
+    --warning: #eea303;
+    --danger: #dc3545;
+    --white: #FFFFFF;
+    --color-gray: #F5F5F5;
+    --color-gray-1: #BDBDBD;
+    --color-gray-2: #616161;
+    --color-gray-3: #424242;
+    --black: #000000;
+
+    /* Font */
+    --font-primary: "Inter", sans-serif;
+    --font-weight-light: 300;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-semibold: 700;
+    --font-size: 1rem;
+    --font-line-height: 1rem;
+
+    --gap: 2rem;
+
+}
+
+
+.alert-success {
+    background-color: rgba(var(--success), 0.5);
+    color: var(--success);
+    border: 1px var(--success) solid;
+    font-weight: var(--font-weight-medium);
+
+    button {
+        color: var(--success);
+    }
+}
+
+
+.alert-danger {
+    background-color: rgba(var(--danger), 0.5);
+    color: var(--danger);
+    border: 1px var(--danger) solid;
+    font-weight: var(--font-weight-medium);
+
+    button {
+        color: var(--danger);
+    }
+}
+
+
+.alert-warning {
+    background-color: rgba(var(--warning), 0.5);
+    color: var(--warning);
+    border: 1px var(--warning) solid;
+    font-weight: var(--font-weight-medium);
+
+    button {
+        color: var(--warning);
+    }
+}
+
+
+.notification-edit {
+    position: absolute;
+    margin: 0 auto;
+    top: 5%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+
+.simplebar-content-wrapper {
+    direction: inherit;
+    box-sizing: border-box !important;
+    position: relative;
+    display: block;
+    height: 100%;
+    /* Required for horizontal native scrollbar to not appear if parent is taller than natural height */
+    width: auto;
+    max-width: 100%;
+    /* Not required for horizontal scroll to trigger */
+    max-height: 100%;
+    /* Needed for vertical scroll to trigger */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.teste {
+    appearance: none;
+
+}
