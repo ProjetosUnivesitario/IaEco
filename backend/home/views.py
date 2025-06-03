@@ -23,10 +23,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from home.models import CustomUser
-from home.serializers import (CaptchaSerializer,
-                              ChangePasswordSerializer,
-                              CPFSerializer, LoginSerializer)
+from home.tasks import process_document
+
+from home.filters import *
+from home.models import *
+from home.serializers import *
 
 
 class UserDetail(APIView):
@@ -215,127 +216,82 @@ class ChangePasswordView(APIView):
             )
 
 
-class DocumentUploadView(generics.CreateAPIView):
+class CompanyViewSet(viewsets.ModelViewSet):
+    queryset = Company.objects.all()
+    serializer_class = CompanySerializer
+    permission_classes = [IsAuthenticated]
+    filterset_class = CompanyFilterClass
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+
+class EmissionScopeViewSet(viewsets.ModelViewSet):
+    queryset = EmissionScope.objects.all()
+    serializer_class = EmissionScopeSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_class = EmissionScopeFilterClass
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+    @action(detail=True, methods=['get'])
+    def details(self, request, pk=None):
+        scope = self.get_object()
+        serializer = self.get_serializer(scope)
+        return Response(serializer.data)
+
+
+class EmissionDataViewSet(viewsets.ModelViewSet):
+    queryset = EmissionData.objects.all()
+    serializer_class = EmissionDataSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_class = EmissionDataFilterClass
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+    @action(detail=True, methods=['get'])
+    def details(self, request, pk=None):
+        emission = self.get_object()
+        serializer = self.get_serializer(emission)
+        return Response(serializer.data)
+    
+
+class DashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        scopes = EmissionScope.objects.filter(company__in=request.user.companies.all()).values(
+            'scope_number', 'co2_equivalent', 'progress_percentage'
+        )
+        total_emissions = EmissionScope.objects.filter(
+            company__in=request.user.companies.all()
+        ).aggregate(total=Sum('co2_equivalent'))['total'] or 0.0
+        return Response({
+            'scopes': list(scopes),
+            'total_emissions': total_emissions
+        })
+    
+
+class DocumentUploadViewSet(viewsets.ModelViewSet):
     queryset = DocumentUpload.objects.all()
     serializer_class = DocumentUploadSerializer
-    parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
+    filterset_class = DocumentUploadFilterClass
 
-    def create(self, request, *args, **kwargs):
-        try:
-            files = request.FILES.getlist('files')
-            if not files:
-                return Response(
-                    {'error': 'Nenhum arquivo foi enviado'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            uploaded_docs = []
-            
-            # Obter ou criar empresa padrão
-            company, created = Company.objects.get_or_create(
-                name="Empresa Padrão",
-                defaults={'cnpj': None}
-            )
-
-            for file in files:
-                # Determinar tipo do arquivo
-                file_type = self.determine_file_type(file)
-                
-                # Criar documento
-                document = DocumentUpload.objects.create(
-                    company=company,
-                    file=file,
-                    file_name=file.name,
-                    file_type=file_type,
-                    file_size=file.size,
-                    uploaded_by=request.user if request.user.is_authenticated else None
-                )
-                
-                # Enviar para processamento em background
-                task = process_carbon_document.delay(str(document.id))
-                document.task_id = task.id
-                document.save()
-                
-                uploaded_docs.append({
-                    'id': str(document.id),
-                    'file_name': document.file_name,
-                    'file_type': document.file_type,
-                    'status': document.status,
-                    'task_id': task.id
-                })
-
-            return Response({
-                'message': f'{len(uploaded_docs)} arquivo(s) enviado(s) com sucesso!',
-                'documents': uploaded_docs
-            }, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            return Response(
-                {'error': f'Erro ao fazer upload: {str(e)}'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-    def determine_file_type(self, file):
-        """Determinar o tipo do arquivo baseado no MIME type"""
-        file_mime = magic.from_buffer(file.read(1024), mime=True)
-        file.seek(0)  # Reset file pointer
-        
-        mime_to_type = {
-            'application/pdf': 'PDF',
-            'application/vnd.ms-excel': 'EXCEL',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'EXCEL',
-            'text/csv': 'CSV',
-            'image/jpeg': 'IMAGE',
-            'image/png': 'IMAGE',
-            'image/jpg': 'IMAGE',
-        }
-        
-        return mime_to_type.get(file_mime, 'OTHER')
-
-@api_view(['GET'])
-def dashboard_data(request):
-    """Endpoint para dados do dashboard"""
-    try:
-        # Obter empresa padrão
-        company = Company.objects.filter(name="Empresa Padrão").first()
-        
-        if not company:
-            # Criar dados demo se não existir
-            company = Company.objects.create(name="Empresa Padrão")
-            
-            # Criar escopos demo
-            current_year = 2024
-            EmissionScope.objects.create(
-                company=company, scope_number=1, co2_equivalent=735.0, 
-                progress_percentage=100, year=current_year
-            )
-            EmissionScope.objects.create(
-                company=company, scope_number=2, co2_equivalent=625.0, 
-                progress_percentage=100, year=current_year
-            )
-            EmissionScope.objects.create(
-                company=company, scope_number=3, co2_equivalent=1285.0, 
-                progress_percentage=92, year=current_year
-            )
-        
-        serializer = CompanyDashboardSerializer(company)
+    @action(detail=True, methods=['get'])
+    def status(self, request, pk=None):
+        document = self.get_object()
+        serializer = self.get_serializer(document)
         return Response(serializer.data)
-        
-    except Exception as e:
-        return Response(
-            {'error': f'Erro ao obter dados do dashboard: {str(e)}'}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-@api_view(['GET'])
-def document_status(request, document_id):
-    """Verificar status de processamento de um documento"""
-    try:
-        document = DocumentUpload.objects.get(id=document_id)
-        serializer = DocumentUploadSerializer(document)
-        return Response(serializer.data)
-    except DocumentUpload.DoesNotExist:
-        return Response(
-            {'error': 'Documento não encontrado'}, 
-            status=status.HTTP_404_NOT_FOUND
-        )
+    

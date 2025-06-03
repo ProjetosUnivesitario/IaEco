@@ -13,7 +13,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=True, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']
+ALLOWED_HOSTS = ['*']
 
 INTERNAL_IPS = ["*"]
 
@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'drf_yasg',
     'home.apps.HomeConfig',
     'auditlog',
     'rest_framework',
@@ -57,11 +58,27 @@ MIDDLEWARE = [
 ]
 
 # Cors definition
+SESSION_COOKIE_SECURE = False  # Permitir cookies de sessão em HTTP durante desenvolvimento
+CSRF_COOKIE_SECURE = False
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 # CORS_ALLOWED_ORIGINS = config('FRONT_HOSTS', default=[], cast=Csv())
+# CORS_ALLOWED_ORIGINS = [
+#     'https://seusite.com',
+#     'https://api.seusite.com',
+#     'http://localhost:3000',
+# ]
+
+# CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+CSRF_TRUSTED_ORIGINS = [
+    'https://seusite.com',
+    'https://api.seusite.com',
+    'http://localhost:8000',
+]
+
+
 
 ROOT_URLCONF = 'core.urls'
 
@@ -137,9 +154,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-STATICFILES_DIRS = [
-     os.path.join(BASE_DIR,"home", "static")
-]
+# STATICFILES_DIRS = [
+#      os.path.join(BASE_DIR,"home", "static")
+# ]
 
 STATIC_ROOT = BASE_DIR / "static" 
 
@@ -198,18 +215,29 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=200),
-    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=200),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=30),
 }
 
+
+RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+
 #Celery
+CELERY_BROKER_URL = config('CELERY_BROKER_URL')
+
+
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+
+
 # Celery Configuration
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='amqp://guest:guest@localhost:5672//')
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'  # Adjust for your RabbitMQ setup
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  # Adjust for your Redis setup
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'America/Fortaleza'
+CELERY_TIMEZONE = 'America/Sao_Paulo'
 
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+# RabbitMQ Configuration (already in your settings)
+RABBITMQ_HOST = 'localhost'

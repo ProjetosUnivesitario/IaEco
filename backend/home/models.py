@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser, User
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
 
@@ -6,6 +6,7 @@ import uuid
 class CustomUser(AbstractUser):
     cpf = models.CharField(max_length=14, unique=True)
     is_temporary_password = models.BooleanField(default=False)
+    companies = models.ManyToManyField('Company', related_name='users', blank=True)
 
     class Meta:
         db_table = 'customuser'
@@ -79,12 +80,12 @@ class DocumentUpload(models.Model):
     file = models.FileField(upload_to='uploads/%Y/%m/%d/')
     file_name = models.CharField(max_length=255)
     file_type = models.CharField(max_length=10, choices=FILE_TYPE_CHOICES)
-    file_size = models.BigIntegerField()  # em bytes
+    file_size = models.BigIntegerField()
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
     task_id = models.CharField(max_length=255, null=True, blank=True)
     error_message = models.TextField(null=True, blank=True)
     processed_data = models.JSONField(null=True, blank=True)
-    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    uploaded_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -94,7 +95,7 @@ class DocumentUpload(models.Model):
 class EmissionData(models.Model):
     document = models.ForeignKey(DocumentUpload, on_delete=models.CASCADE, related_name='emissions')
     scope = models.ForeignKey(EmissionScope, on_delete=models.CASCADE, related_name='data_entries')
-    source_category = models.CharField(max_length=100)  # ex: "Combustão Estacionária"
+    source_category = models.CharField(max_length=100)
     co2_value = models.DecimalField(max_digits=10, decimal_places=3)
     unit = models.CharField(max_length=20, default='tCO₂e')
     calculation_method = models.CharField(max_length=100, null=True, blank=True)

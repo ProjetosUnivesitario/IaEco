@@ -1,14 +1,13 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from home.views import (AuthLoginView, AuthResetView, CaptchaView,
-                        ChangePasswordView, UserDetail, ValidateCaptchaView,
-                        DocumentUploadView,
-                        dashboard_data,
-                        document_status)
+from home.views import *
 
 router = DefaultRouter()
-
+router.register(r'companies', CompanyViewSet)
+router.register(r'emission-scopes', EmissionScopeViewSet)
+router.register(r'document-uploads', DocumentUploadViewSet)
+router.register(r'emission-data', EmissionDataViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -26,7 +25,5 @@ urlpatterns = [
         name='change_password',
     ),
     path('user/me/', UserDetail.as_view(), name='user-detail'),
-    path('upload/', DocumentUploadView.as_view(), name='document-upload'),
-    path('dashboard/', dashboard_data, name='dashboard-data'),
-    path('document/<uuid:document_id>/status/', document_status, name='document-status'),
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),
 ]
